@@ -1,5 +1,5 @@
 -- ========================================================
--- BL4CK HUB - WITH CUSTOM BACKGROUND IMAGE
+-- BL4CK HUB - UPDATED BACKGROUND IMAGE FIX
 -- ========================================================
 
 local function RandomString(length)
@@ -47,7 +47,7 @@ Frame.Position = UDim2.new(0.5, -190, 0.5, -220)
 Frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 Frame.BorderSizePixel = 0
 Frame.Active = true
-Frame.ClipsDescendants = true -- Garante que a imagem respeita os cantos arredondados
+Frame.ClipsDescendants = true
 Frame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner", Frame)
@@ -57,21 +57,21 @@ local UIStroke = Instance.new("UIStroke", Frame)
 UIStroke.Color = Color3.fromRGB(0, 170, 255)
 UIStroke.Thickness = 1.5
 
--- Adicionar a tua imagem de fundo personalizada
+-- Imagem de Fundo (usando rbxthumb para carregar corretamente o ativo)
 local BackgroundImage = Instance.new("ImageLabel", Frame)
 BackgroundImage.Name = "CustomBG"
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "rbxassetid://91414165325665"
-BackgroundImage.ImageTransparency = 0.4 -- Podes ajustar de 0 (opaco) a 1 (invisível)
-BackgroundImage.ScaleType = Enum.ScaleType.Slice
+BackgroundImage.Image = "rbxthumb://type=Asset&id=91414165325665&w=420&h=420"
+BackgroundImage.ImageTransparency = 0.15 -- Opacidade ajustada para manter os botões bem legíveis
+BackgroundImage.ScaleType = Enum.ScaleType.Stretch
 BackgroundImage.ZIndex = 0
 
 local TitleBar = Instance.new("Frame", Frame)
 TitleBar.Size = UDim2.new(1, 0, 0, 45)
 TitleBar.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
-TitleBar.BackgroundTransparency = 0.2 -- Ligeiramente translúcido para ver o fundo
+TitleBar.BackgroundTransparency = 0.3
 TitleBar.BorderSizePixel = 0
 TitleBar.ZIndex = 2
 
@@ -136,8 +136,8 @@ local function CreateButton(parent, text, position)
     btn.Size = UDim2.new(0, 168, 0, 40)
     btn.Position = position
     btn.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-    btn.BackgroundTransparency = 0.2
-    btn.TextColor3 = Color3.fromRGB(200, 200, 210)
+    btn.BackgroundTransparency = 0.3
+    btn.TextColor3 = Color3.fromRGB(220, 220, 230)
     btn.Font = Enum.Font.GothamSemibold
     btn.TextSize = 13
     btn.Text = text
@@ -176,7 +176,7 @@ local SpeedTextbox = Instance.new("TextBox", Frame)
 SpeedTextbox.Size = UDim2.new(0, 75, 0, 35)
 SpeedTextbox.Position = UDim2.new(0, 108, 0, 233)
 SpeedTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
-SpeedTextbox.BackgroundTransparency = 0.2
+SpeedTextbox.BackgroundTransparency = 0.3
 SpeedTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpeedTextbox.Font = Enum.Font.GothamSemibold
 SpeedTextbox.TextSize = 14
@@ -200,7 +200,7 @@ local FOVTextbox = Instance.new("TextBox", Frame)
 FOVTextbox.Size = UDim2.new(0, 75, 0, 35)
 FOVTextbox.Position = UDim2.new(0, 290, 0, 233)
 FOVTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
-FOVTextbox.BackgroundTransparency = 0.2
+FOVTextbox.BackgroundTransparency = 0.3
 FOVTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
 FOVTextbox.Font = Enum.Font.GothamSemibold
 FOVTextbox.TextSize = 14
@@ -471,7 +471,7 @@ pcall(function()
     local function UpdateButtonStyle(btn, state)
         TweenService:Create(btn, TweenInfo.new(0.2), {
             BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(28, 28, 38),
-            TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 210)
+            TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(220, 220, 230)
         }):Play()
     end
 
@@ -528,7 +528,7 @@ pcall(function()
         end
     end)
 
-    ESPButton.MouseButton1Click:Connect(function2()
+    ESPButton.MouseButton1Click:Connect(function()
         espEnabled = not espEnabled
         ESPButton.Text = espEnabled and "Desativar ESP (R)" or "Ativar ESP (R)"
         UpdateButtonStyle(ESPButton, espEnabled)
