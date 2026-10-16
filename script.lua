@@ -1,5 +1,5 @@
 -- ========================================================
--- BL4CK HUB - UPDATED BACKGROUND IMAGE FIX
+-- BL4CK HUB - AUTOMATIC IMAGE ID RESOLVER
 -- ========================================================
 
 local function RandomString(length)
@@ -44,7 +44,7 @@ ScreenGui.Parent = playerGui
 local Frame = Instance.new("Frame")
 Frame.Size = UDim2.new(0, 380, 0, 440)
 Frame.Position = UDim2.new(0.5, -190, 0.5, -220)
-Frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 Frame.BorderSizePixel = 0
 Frame.Active = true
 Frame.ClipsDescendants = true
@@ -57,21 +57,38 @@ local UIStroke = Instance.new("UIStroke", Frame)
 UIStroke.Color = Color3.fromRGB(0, 170, 255)
 UIStroke.Thickness = 1.5
 
--- Imagem de Fundo (usando rbxthumb para carregar corretamente o ativo)
+-- Imagem de Fundo (com extração automática de Texture ID)
 local BackgroundImage = Instance.new("ImageLabel", Frame)
 BackgroundImage.Name = "CustomBG"
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "rbxthumb://type=Asset&id=91414165325665&w=420&h=420"
-BackgroundImage.ImageTransparency = 0.15 -- Opacidade ajustada para manter os botões bem legíveis
+BackgroundImage.ImageTransparency = 0.2 -- Ajustado para sobressair bem no fundo
 BackgroundImage.ScaleType = Enum.ScaleType.Stretch
 BackgroundImage.ZIndex = 0
 
+-- Tenta converter o Decal ID para o Image ID real do Roblox
+task.spawn(function()
+    local decalId = 91414165325665
+    local success, result = pcall(function()
+        local objects = game:GetObjects("rbxassetid://" .. decalId)
+        if objects and objects[1] and objects[1]:IsA("Decal") then
+            return objects[1].Texture
+        end
+    end)
+    
+    if success and result and result ~= "" then
+        BackgroundImage.Image = result
+    else
+        -- Fallback caso o GetObjects falhe no executor
+        BackgroundImage.Image = "rbxassetid://" .. (decalId - 1)
+    end
+end)
+
 local TitleBar = Instance.new("Frame", Frame)
 TitleBar.Size = UDim2.new(1, 0, 0, 45)
-TitleBar.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
-TitleBar.BackgroundTransparency = 0.3
+TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+TitleBar.BackgroundTransparency = 0.4
 TitleBar.BorderSizePixel = 0
 TitleBar.ZIndex = 2
 
@@ -135,8 +152,8 @@ local function CreateButton(parent, text, position)
     local btn = Instance.new("TextButton", parent)
     btn.Size = UDim2.new(0, 168, 0, 40)
     btn.Position = position
-    btn.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-    btn.BackgroundTransparency = 0.3
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    btn.BackgroundTransparency = 0.4
     btn.TextColor3 = Color3.fromRGB(220, 220, 230)
     btn.Font = Enum.Font.GothamSemibold
     btn.TextSize = 13
@@ -176,7 +193,7 @@ local SpeedTextbox = Instance.new("TextBox", Frame)
 SpeedTextbox.Size = UDim2.new(0, 75, 0, 35)
 SpeedTextbox.Position = UDim2.new(0, 108, 0, 233)
 SpeedTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
-SpeedTextbox.BackgroundTransparency = 0.3
+SpeedTextbox.BackgroundTransparency = 0.4
 SpeedTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpeedTextbox.Font = Enum.Font.GothamSemibold
 SpeedTextbox.TextSize = 14
@@ -200,7 +217,7 @@ local FOVTextbox = Instance.new("TextBox", Frame)
 FOVTextbox.Size = UDim2.new(0, 75, 0, 35)
 FOVTextbox.Position = UDim2.new(0, 290, 0, 233)
 FOVTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
-FOVTextbox.BackgroundTransparency = 0.3
+FOVTextbox.BackgroundTransparency = 0.4
 FOVTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
 FOVTextbox.Font = Enum.Font.GothamSemibold
 FOVTextbox.TextSize = 14
@@ -470,7 +487,7 @@ pcall(function()
 
     local function UpdateButtonStyle(btn, state)
         TweenService:Create(btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(28, 28, 38),
+            BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(25, 25, 35),
             TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(220, 220, 230)
         }):Play()
     end
