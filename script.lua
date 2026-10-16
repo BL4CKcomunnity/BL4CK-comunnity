@@ -1,5 +1,5 @@
 -- ========================================================
--- BL4CK HUB - AUTOMATIC IMAGE ID RESOLVER
+-- BL4CK HUB - DIRECT API IMAGE FIX
 -- ========================================================
 
 local function RandomString(length)
@@ -57,33 +57,16 @@ local UIStroke = Instance.new("UIStroke", Frame)
 UIStroke.Color = Color3.fromRGB(0, 170, 255)
 UIStroke.Thickness = 1.5
 
--- Imagem de Fundo (com extração automática de Texture ID)
+-- Imagem de Fundo (Acesso direto via assetdelivery da API do Roblox)
 local BackgroundImage = Instance.new("ImageLabel", Frame)
 BackgroundImage.Name = "CustomBG"
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.ImageTransparency = 0.2 -- Ajustado para sobressair bem no fundo
+BackgroundImage.Image = "https://assetdelivery.roblox.com/v1/asset/?id=91414165325665"
+BackgroundImage.ImageTransparency = 0.15
 BackgroundImage.ScaleType = Enum.ScaleType.Stretch
 BackgroundImage.ZIndex = 0
-
--- Tenta converter o Decal ID para o Image ID real do Roblox
-task.spawn(function()
-    local decalId = 91414165325665
-    local success, result = pcall(function()
-        local objects = game:GetObjects("rbxassetid://" .. decalId)
-        if objects and objects[1] and objects[1]:IsA("Decal") then
-            return objects[1].Texture
-        end
-    end)
-    
-    if success and result and result ~= "" then
-        BackgroundImage.Image = result
-    else
-        -- Fallback caso o GetObjects falhe no executor
-        BackgroundImage.Image = "rbxassetid://" .. (decalId - 1)
-    end
-end)
 
 local TitleBar = Instance.new("Frame", Frame)
 TitleBar.Size = UDim2.new(1, 0, 0, 45)
