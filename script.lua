@@ -1,5 +1,5 @@
 -- ========================================================
--- BL4CK HUB - UPDATED BACKGROUND IMAGE (ID: 88672860440331)
+-- BL4CK HUB - DIRECT API IMAGE FIX
 -- ========================================================
 
 local function RandomString(length)
@@ -57,13 +57,13 @@ local UIStroke = Instance.new("UIStroke", Frame)
 UIStroke.Color = Color3.fromRGB(0, 170, 255)
 UIStroke.Thickness = 1.5
 
--- Imagem de Fundo (Acesso direto via API assetdelivery com o novo ID)
+-- Imagem de Fundo (Acesso direto via assetdelivery da API do Roblox)
 local BackgroundImage = Instance.new("ImageLabel", Frame)
 BackgroundImage.Name = "CustomBG"
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "https://assetdelivery.roblox.com/v1/asset/?id=88672860440331"
+BackgroundImage.Image = "https://assetdelivery.roblox.com/v1/asset/?id=91414165325665"
 BackgroundImage.ImageTransparency = 0.15
 BackgroundImage.ScaleType = Enum.ScaleType.Stretch
 BackgroundImage.ZIndex = 0
@@ -251,4 +251,303 @@ pcall(function()
         
         for _, targetPlayer in pairs(Players:GetPlayers()) do
             if targetPlayer ~= player and not IsTeammate(targetPlayer) and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Head") and targetPlayer.Character:FindFirstChild("Humanoid") and targetPlayer.Character.Humanoid.Health > 0 then
-                local head = targetPlayer.
+                local head = targetPlayer.Character.Head
+                local headPos, onScreen = camera:WorldToViewportPoint(head.Position)
+                
+                if onScreen and IsVisible(head) then
+                    local screenPos = Vector2.new(headPos.X, headPos.Y)
+                    local distanceFromCenter = (screenPos - center).Magnitude
+                    
+                    if distanceFromCenter <= smallestDistance then
+                        smallestDistance = distanceFromCenter
+                        closestPlayer = targetPlayer
+                    end
+                end
+            end
+        end
+        return closestPlayer
+    end
+
+    local function ClearESP(char)
+        if not char then return end
+        for _, item in pairs(char:GetDescendants()) do
+            if (item:IsA("BoxHandleAdornment") and item.Name == "Bl4ckBoxESP") or (item:IsA("BillboardGui") and item.Name == "Bl4ckNameESP") then
+                item:Destroy()
+            end
+        end
+    end
+
+    local function ApplyBasicESP(targetPlayer, char)
+        if not char then return end
+        ClearESP(char)
+
+        if not espEnabled then return end
+
+        local humanoid = char:WaitForChild("Humanoid", 3)
+        local head = char:WaitForChild("Head", 3)
+        if not humanoid or humanoid.Health <= 0 or not head then return end
+
+        local isTeam = IsTeammate(targetPlayer)
+        local color = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 50, 50)
+
+        for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") then
+                local box = Instance.new("BoxHandleAdornment")
+                box.Name = "Bl4ckBoxESP"
+                box.Size = part.Size
+                box.Color3 = color
+                box.Transparency = 0.5
+                box.AlwaysOnTop = true
+                box.ZIndex = 5
+                box.Adornee = part
+                box.Parent = part
+            end
+        end
+
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "Bl4ckNameESP"
+        billboard.Size = UDim2.new(0, 200, 0, 50)
+        billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Adornee = head
+        billboard.Parent = head
+
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = targetPlayer.Name
+        textLabel.TextColor3 = color
+        textLabel.TextSize = 13
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.TextStrokeTransparency = 0.2
+        textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        textLabel.Parent = billboard
+    end
+
+    local function UpdateAllESP()
+        for _, targetPlayer in pairs(Players:GetPlayers()) do
+            if targetPlayer ~= player and targetPlayer.Character then
+                ApplyBasicESP(targetPlayer, targetPlayer.Character)
+            end
+        end
+    end
+
+    local function SetupPlayer(targetPlayer)
+        if targetPlayer.Character then
+            ApplyBasicESP(targetPlayer, targetPlayer.Character)
+        end
+        targetPlayer.CharacterAdded:Connect(function(newChar)
+            task.wait(0.3)
+            ApplyBasicESP(targetPlayer, newChar)
+        end)
+    end
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player then
+            SetupPlayer(p)
+        end
+    end
+
+    Players.PlayerAdded:Connect(function(p)
+        SetupPlayer(p)
+    end)
+
+    local function ToggleWallCheck()
+        wallCheckEnabled = not wallCheckEnabled
+        WallCheckButton.Text = wallCheckEnabled and "WallCheck: ON (T)" or "WallCheck: OFF (T)"
+    end
+
+    local function ToggleFly()
+        flyEnabled = not flyEnabled
+        FlyButton.Text = flyEnabled and "Desativar Fly (F)" or "Ativar Fly (F)"
+        
+        local character = player.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = character.HumanoidRootPart
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        
+        if flyEnabled then
+            bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Velocity = Vector3.new(0, 0, 0)
+            bv.Parent = hrp
+            
+            bg = Instance.new("BodyGyro")
+            bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bg.CFrame = hrp.CFrame
+            bg.Parent = hrp
+            
+            if humanoid then humanoid.PlatformStand = true end
+        else
+            if bv then bv:Destroy() end
+            if bg then bg:Destroy() end
+            if humanoid then humanoid.PlatformStand = false end
+        end
+    end
+
+    local function ToggleNoclip()
+        noclipEnabled = not noclipEnabled
+        NoclipButton.Text = noclipEnabled and "Noclip: ON (X)" or "Noclip: OFF (X)"
+    end
+
+    local function UnloadScript()
+        aimbotEnabled = false
+        legitAimbotEnabled = false
+        espEnabled = false
+        flyEnabled = false
+        noclipEnabled = false
+        
+        if bv then bv:Destroy() end
+        if bg then bg:Destroy() end
+        
+        if player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.PlatformStand = false end
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+        
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character then
+                ClearESP(p.Character)
+            end
+        end
+        
+        if renderConnection then
+            renderConnection:Disconnect()
+        end
+        
+        ScreenGui:Destroy()
+    end
+
+    renderConnection = RunService.RenderStepped:Connect(function(dt)
+        if aimbotEnabled then
+            local target = GetClosestPlayerToCenter()
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                camera.CFrame = CFrame.new(camera.CFrame.Position, target.Character.Head.Position)
+            end
+        end
+
+        if legitAimbotEnabled then
+            local target = GetClosestPlayerToCenter()
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                local targetPos = target.Character.Head.Position
+                local goalCFrame = CFrame.new(camera.CFrame.Position, targetPos)
+                local smoothness = math.clamp(dt * 4.5, 0.02, 0.08)
+                camera.CFrame = camera.CFrame:Lerp(goalCFrame, smoothness)
+            end
+        end
+
+        if flyEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = player.Character.HumanoidRootPart
+            local moveDir = Vector3.new(0, 0, 0)
+            local currentSpeed = tonumber(SpeedTextbox.Text) or 50
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+            
+            if bv and bg then
+                bv.Velocity = moveDir * currentSpeed
+                bg.CFrame = camera.CFrame
+            end
+        end
+
+        if noclipEnabled and player.Character then
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+
+    local function UpdateButtonStyle(btn, state)
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(25, 25, 35),
+            TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(220, 220, 230)
+        }):Play()
+    end
+
+    AimbotButton.MouseButton1Click:Connect(function()
+        aimbotEnabled = not aimbotEnabled
+        if aimbotEnabled then 
+            legitAimbotEnabled = false 
+            LegitButton.Text = "Legit Aimbot (Segurar Q)"
+            UpdateButtonStyle(LegitButton, false)
+        end
+        AimbotButton.Text = aimbotEnabled and "Desativar Aimbot (E)" or "Ativar Aimbot (E)"
+        UpdateButtonStyle(AimbotButton, aimbotEnabled)
+    end)
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            if input.KeyCode == Enum.KeyCode.E then
+                aimbotEnabled = not aimbotEnabled
+                if aimbotEnabled then 
+                    legitAimbotEnabled = false 
+                    LegitButton.Text = "Legit Aimbot (Segurar Q)"
+                    UpdateButtonStyle(LegitButton, false)
+                end
+                AimbotButton.Text = aimbotEnabled and "Desativar Aimbot (E)" or "Ativar Aimbot (E)"
+                UpdateButtonStyle(AimbotButton, aimbotEnabled)
+            elseif input.KeyCode == Enum.KeyCode.Q then
+                legitAimbotEnabled = true
+                aimbotEnabled = false 
+                AimbotButton.Text = "Ativar Aimbot (E)"
+                UpdateButtonStyle(AimbotButton, false)
+                LegitButton.Text = "A a segurar (Q)..."
+                UpdateButtonStyle(LegitButton, true)
+            elseif input.KeyCode == Enum.KeyCode.R then
+                espEnabled = not espEnabled
+                ESPButton.Text = espEnabled and "Desativar ESP (R)" or "Ativar ESP (R)"
+                UpdateButtonStyle(ESPButton, espEnabled)
+                UpdateAllESP()
+            elseif input.KeyCode == Enum.KeyCode.T then
+                ToggleWallCheck()
+            elseif input.KeyCode == Enum.KeyCode.F then
+                ToggleFly()
+            elseif input.KeyCode == Enum.KeyCode.X then
+                ToggleNoclip()
+            end
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.Q then
+            legitAimbotEnabled = false
+            LegitButton.Text = "Legit Aimbot (Segurar Q)"
+            UpdateButtonStyle(LegitButton, false)
+        end
+    end)
+
+    ESPButton.MouseButton1Click:Connect(function()
+        espEnabled = not espEnabled
+        ESPButton.Text = espEnabled and "Desativar ESP (R)" or "Ativar ESP (R)"
+        UpdateButtonStyle(ESPButton, espEnabled)
+        UpdateAllESP()
+    end)
+
+    WallCheckButton.MouseButton1Click:Connect(function()
+        ToggleWallCheck()
+    end)
+
+    FlyButton.MouseButton1Click:Connect(function()
+        ToggleFly()
+    end)
+
+    NoclipButton.MouseButton1Click:Connect(function()
+        ToggleNoclip()
+    end)
+
+    CloseButton.MouseButton1Click:Connect(function()
+        UnloadScript()
+    end)
+end)
