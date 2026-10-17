@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
 -- Link RAW do teu ficheiro whitelist.json no GitHub
-local WhitelistURL = "https://raw.githubusercontent.com/BL4CKcomunnity/BL4CK-comunnity/refs/heads/main/whitelist.json"
+local WhitelistURL = "https://raw.githubusercontent.com/BL4CKcomunnity/BL4CK-comunnity/refs/heads/main/whitelist.json?v=" .. tick()
 
 local function CheckAccess()
     local success, response = pcall(function()
