@@ -1,10 +1,9 @@
 {
-    "whitelisted_users": [
-      "gwbb11111",
-        "haha01573" ,
-        "ogonkegey12345" 
-       
-     
-    ],
-    "keys": []
+{
+  "whitelisted_users": [
+    "gwbb11111",
+    "haha01573",
+    "ogonkegey12345"
+  ],
+  "keys": []
 }
