@@ -20,8 +20,8 @@ local function CheckAccess()
         end)
         
         if successDecode and data then
-            -- Verifica a chave correta do ficheiro JSON no GitHub
-            local listaUsers = data.whitelisted_users or data.usuarios or data.users
+            -- Aceita qualquer variação da chave, incluindo chaves traduzidas pelo navegador
+            local listaUsers = data.whitelisted_users or data.usuarios or data.users or data.usuários_da_lista_de_permissões
             if listaUsers then
                 for _, name in pairs(listaUsers) do
                     if name:lower() == player.Name:lower() then
