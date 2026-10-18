@@ -1,13 +1,13 @@
 -- ========================================================
--- BL4CK HUB - WHITELIST & SCRIPT PRINCIPAL
+-- BL4CK HUB - WHITELIST & SCRIPT PRINCIPAL COMPLETO
 -- ========================================================
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- Link RAW do teu ficheiro whitelist.json no GitHub
-local WhitelistURL = "https://raw.githubusercontent.com/BL4CKcomunnity/BL4CK-comunnity/refs/heads/main/whitelist.json?v=" .. tick()
+-- Link RAW do teu ficheiro whitelist.json no GitHub com anti-cache
+local WhitelistURL = "https://raw.githubusercontent.com/BL4CKcomunnity/BL4CK-comunnity/refs/heads/main/whitelist.json?nocache=" .. tick()
 
 local function CheckAccess()
     local success, response = pcall(function()
@@ -15,15 +15,17 @@ local function CheckAccess()
     end)
     
     if success then
-        local data = HttpService:JSONDecode(response)
+        local successDecode, data = pcall(function()
+            return HttpService:JSONDecode(response)
+        end)
         
-        -- Verifica ambas as chaves possíveis para evitar falhas de whitelist
-        local listaUsers = data.whitelisted_users or data["usuários_da_lista_de_permisões"] or data.usuarios_da_lista_de_permisoes
-        
-        if listaUsers then
-            for _, name in pairs(listaUsers) do
-                if name:lower() == player.Name:lower() then
-                    return true
+        if successDecode and data then
+            local listaUsers = data.whitelisted_users or data["usuários_da_lista_de_permissões"] or data.usuarios_da_lista_de_permisoes or data.users
+            if listaUsers then
+                for _, name in pairs(listaUsers) do
+                    if name:lower() == player.Name:lower() then
+                        return true
+                    end
                 end
             end
         end
@@ -38,7 +40,7 @@ if not CheckAccess() then
 end
 
 -- ========================================================
--- CÓDIGO DO UI DO BL4CK HUB
+-- CÓDIGO DA UI DO BL4CK HUB
 -- ========================================================
 
 local function RandomString(length)
@@ -66,6 +68,21 @@ local wallCheckEnabled = false
 local bv, bg
 local renderConnection
 
+-- Tabela de Binds Configuráveis
+local Binds = {
+    Aimbot = Enum.KeyCode.E,
+    LegitAimbot = Enum.KeyCode.Q,
+    ESP = Enum.KeyCode.R,
+    WallCheck = Enum.KeyCode.T,
+    Fly = Enum.KeyCode.F,
+    Noclip = Enum.KeyCode.X,
+    TabGeral = Enum.KeyCode.G,
+    TabExtras = Enum.KeyCode.H,
+    TabBinds = Enum.KeyCode.J
+}
+
+local listeningForBind = nil
+
 local playerGui = player:WaitForChild("PlayerGui")
 for _, old in pairs(playerGui:GetChildren()) do
     if old:IsA("ScreenGui") and old.Name:find("Bl4ck") then
@@ -78,67 +95,289 @@ ScreenGui.Name = GuiName
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
+-- Frame Principal Horizontal e Animado
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 380, 0, 440)
-Frame.Position = UDim2.new(0.5, -190, 0.5, -220)
+Frame.Size = UDim2.new(0, 460, 0, 220)
+Frame.Position = UDim2.new(0.5, -230, 0.5, -110)
 Frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 Frame.BorderSizePixel = 0
 Frame.Active = true
-Frame.ClipsDescendants = true
+Frame.ClipsDescendants = false
 Frame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner", Frame)
-UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.CornerRadius = UDim.new(0, 10)
 
+-- Contorno Principal com Brilho/Raios Azuis Neon
 local UIStroke = Instance.new("UIStroke", Frame)
 UIStroke.Color = Color3.fromRGB(0, 170, 255)
-UIStroke.Thickness = 1.5
+UIStroke.Thickness = 2.5
 
--- Imagem de Fundo (usando rbxthumb para carregar corretamente)
+task.spawn(function()
+    while Frame.Parent do
+        TweenService:Create(UIStroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.1, Thickness = 3}):Play()
+        task.wait(0.8)
+        TweenService:Create(UIStroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.5, Thickness = 2}):Play()
+        task.wait(0.8)
+    end
+end)
+
+-- Animação inicial
+Frame.Size = UDim2.new(0, 0, 0, 0)
+TweenService:Create(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 460, 0, 220)}):Play()
+
+-- Imagem de Fundo
 local BackgroundImage = Instance.new("ImageLabel", Frame)
 BackgroundImage.Name = "CustomBG"
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
 BackgroundImage.Image = "rbxthumb://type=Asset&id=91414165325665&w=420&h=420"
-BackgroundImage.ImageTransparency = 0.15
+BackgroundImage.ImageTransparency = 0.25
 BackgroundImage.ScaleType = Enum.ScaleType.Stretch
 BackgroundImage.ZIndex = 0
 
+-- Barra Superior
 local TitleBar = Instance.new("Frame", Frame)
-TitleBar.Size = UDim2.new(1, 0, 0, 45)
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
 TitleBar.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
 TitleBar.BackgroundTransparency = 0.3
 TitleBar.BorderSizePixel = 0
 TitleBar.ZIndex = 2
 
 local TitleCorner = Instance.new("UICorner", TitleBar)
-TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.CornerRadius = UDim.new(0, 10)
 
 local Title = Instance.new("TextLabel", TitleBar)
-Title.Size = UDim2.new(1, -50, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(0, 110, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
+Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Text = "BL4CK <font color=\"rgb(0,170,255)\">HUB</font>"
 Title.RichText = true
 Title.ZIndex = 2
 
+-- Seletor de Abas (G, H e J)
+local TabBar = Instance.new("Frame", TitleBar)
+TabBar.Size = UDim2.new(0, 220, 0, 24)
+TabBar.Position = UDim2.new(1, -260, 0, 5.5)
+TabBar.BackgroundTransparency = 1
+TabBar.ZIndex = 3
+
+local TabGeralBtn = Instance.new("TextButton", TabBar)
+TabGeralBtn.Size = UDim2.new(0.32, 0, 1, 0)
+TabGeralBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+TabGeralBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TabGeralBtn.Font = Enum.Font.GothamBold
+TabGeralBtn.TextSize = 9
+TabGeralBtn.Text = "GERAL [G]"
+TabGeralBtn.ZIndex = 3
+Instance.new("UICorner", TabGeralBtn).CornerRadius = UDim.new(0, 5)
+
+local TabExtrasBtn = Instance.new("TextButton", TabBar)
+TabExtrasBtn.Size = UDim2.new(0.32, 0, 1, 0)
+TabExtrasBtn.Position = UDim2.new(0.34, 0, 0, 0)
+TabExtrasBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+TabExtrasBtn.TextColor3 = Color3.fromRGB(160, 160, 170)
+TabExtrasBtn.Font = Enum.Font.GothamBold
+TabExtrasBtn.TextSize = 9
+TabExtrasBtn.Text = "EXTRAS [H]"
+TabExtrasBtn.ZIndex = 3
+Instance.new("UICorner", TabExtrasBtn).CornerRadius = UDim.new(0, 5)
+
+local TabBindsBtn = Instance.new("TextButton", TabBar)
+TabBindsBtn.Size = UDim2.new(0.32, 0, 1, 0)
+TabBindsBtn.Position = UDim2.new(0.68, 0, 0, 0)
+TabBindsBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+TabBindsBtn.TextColor3 = Color3.fromRGB(160, 160, 170)
+TabBindsBtn.Font = Enum.Font.GothamBold
+TabBindsBtn.TextSize = 9
+TabBindsBtn.Text = "BINDS [J]"
+TabBindsBtn.ZIndex = 3
+Instance.new("UICorner", TabBindsBtn).CornerRadius = UDim.new(0, 5)
+
 local CloseButton = Instance.new("TextButton", TitleBar)
-CloseButton.Size = UDim2.new(0, 32, 0, 32)
-CloseButton.Position = UDim2.new(1, -38, 0, 6.5)
+CloseButton.Size = UDim2.new(0, 24, 0, 24)
+CloseButton.Position = UDim2.new(1, -30, 0, 5.5)
 CloseButton.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
 CloseButton.TextColor3 = Color3.fromRGB(255, 80, 80)
 CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 14
+CloseButton.TextSize = 12
 CloseButton.Text = "X"
-CloseButton.ZIndex = 2
-local CloseCorner = Instance.new("UICorner", CloseButton)
-CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseButton.ZIndex = 3
+Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0, 5)
 
+-- Containers das Abas
+local ContainerGeral = Instance.new("Frame", Frame)
+ContainerGeral.Size = UDim2.new(1, -20, 1, -45)
+ContainerGeral.Position = UDim2.new(0, 10, 0, 40)
+ContainerGeral.BackgroundTransparency = 1
+ContainerGeral.Visible = true
+ContainerGeral.ZIndex = 2
+
+local ContainerExtras = Instance.new("Frame", Frame)
+ContainerExtras.Size = UDim2.new(1, -20, 1, -45)
+ContainerExtras.Position = UDim2.new(0, 10, 0, 40)
+ContainerExtras.BackgroundTransparency = 1
+ContainerExtras.Visible = false
+ContainerExtras.ZIndex = 2
+
+local ContainerBinds = Instance.new("ScrollingFrame", Frame)
+ContainerBinds.Size = UDim2.new(1, -20, 1, -45)
+ContainerBinds.Position = UDim2.new(0, 10, 0, 40)
+ContainerBinds.BackgroundTransparency = 1
+ContainerBinds.Visible = false
+ContainerBinds.ScrollBarThickness = 3
+ContainerBinds.CanvasSize = UDim2.new(0, 0, 0, 220)
+ContainerBinds.ZIndex = 2
+
+local BindsLayout = Instance.new("UIGridLayout", ContainerBinds)
+BindsLayout.CellSize = UDim2.new(0, 210, 0, 32)
+BindsLayout.CellPadding = UDim2.new(0, 10, 0, 8)
+
+-- Função de Troca de Abas
+local function SwitchTab(tabName)
+    ContainerGeral.Visible = (tabName == "Geral")
+    ContainerExtras.Visible = (tabName == "Extras")
+    ContainerBinds.Visible = (tabName == "Binds")
+
+    TabGeralBtn.BackgroundColor3 = (tabName == "Geral") and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(32, 32, 42)
+    TabGeralBtn.TextColor3 = (tabName == "Geral") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 170)
+
+    TabExtrasBtn.BackgroundColor3 = (tabName == "Extras") and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(32, 32, 42)
+    TabExtrasBtn.TextColor3 = (tabName == "Extras") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 170)
+
+    TabBindsBtn.BackgroundColor3 = (tabName == "Binds") and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(32, 32, 42)
+    TabBindsBtn.TextColor3 = (tabName == "Binds") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 170)
+end
+
+TabGeralBtn.MouseButton1Click:Connect(function() SwitchTab("Geral") end)
+TabExtrasBtn.MouseButton1Click:Connect(function() SwitchTab("Extras") end)
+TabBindsBtn.MouseButton1Click:Connect(function() SwitchTab("Binds") end)
+
+-- Criar Botões Animados
+local function CreateButton(parent, text, position)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0, 212, 0, 34)
+    btn.Position = position
+    btn.BackgroundColor3 = Color3.fromRGB(26, 26, 36)
+    btn.BackgroundTransparency = 0.3
+    btn.TextColor3 = Color3.fromRGB(210, 210, 220)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 11
+    btn.Text = text
+    btn.AutoButtonColor = false
+    btn.ZIndex = 2
+    
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = Color3.fromRGB(45, 45, 60)
+    stroke.Thickness = 1
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(36, 36, 48)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        if not btn:GetAttribute("ActiveState") then
+            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(26, 26, 36)}):Play()
+        end
+    end)
+    
+    return btn
+end
+
+-- Botões Aba Geral
+local AimbotButton = CreateButton(ContainerGeral, "Ativar Aimbot ("..Binds.Aimbot.Name..")", UDim2.new(0, 0, 0, 12))
+local LegitButton = CreateButton(ContainerGeral, "Legit Aimbot ("..Binds.LegitAimbot.Name..")", UDim2.new(0, 222, 0, 12))
+local ESPButton = CreateButton(ContainerGeral, "Ativar ESP ("..Binds.ESP.Name..")", UDim2.new(0, 0, 0, 54))
+local WallCheckButton = CreateButton(ContainerGeral, "WallCheck: OFF ("..Binds.WallCheck.Name..")", UDim2.new(0, 222, 0, 54))
+
+local FOVLabel = Instance.new("TextLabel", ContainerGeral)
+FOVLabel.Size = UDim2.new(0, 75, 0, 32)
+FOVLabel.Position = UDim2.new(0, 0, 0, 96)
+FOVLabel.BackgroundTransparency = 1
+FOVLabel.TextColor3 = Color3.fromRGB(210, 210, 220)
+FOVLabel.Font = Enum.Font.GothamSemibold
+FOVLabel.TextSize = 11
+FOVLabel.Text = "Raio FOV:"
+FOVLabel.TextXAlignment = Enum.TextXAlignment.Left
+FOVLabel.ZIndex = 2
+
+local FOVTextbox = Instance.new("TextBox", ContainerGeral)
+FOVTextbox.Size = UDim2.new(0, 137, 0, 32)
+FOVTextbox.Position = UDim2.new(0, 75, 0, 96)
+FOVTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
+FOVTextbox.BackgroundTransparency = 0.3
+FOVTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
+FOVTextbox.Font = Enum.Font.GothamSemibold
+FOVTextbox.TextSize = 12
+FOVTextbox.Text = "100"
+FOVTextbox.ZIndex = 2
+Instance.new("UICorner", FOVTextbox).CornerRadius = UDim.new(0, 6)
+
+-- Botões Aba Extras
+local FlyButton = CreateButton(ContainerExtras, "Ativar Fly ("..Binds.Fly.Name..")", UDim2.new(0, 0, 0, 12))
+local NoclipButton = CreateButton(ContainerExtras, "Noclip: OFF ("..Binds.Noclip.Name..")", UDim2.new(0, 222, 0, 12))
+
+local SpeedLabel = Instance.new("TextLabel", ContainerExtras)
+SpeedLabel.Size = UDim2.new(0, 85, 0, 32)
+SpeedLabel.Position = UDim2.new(0, 0, 0, 54)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.TextColor3 = Color3.fromRGB(210, 210, 220)
+SpeedLabel.Font = Enum.Font.GothamSemibold
+SpeedLabel.TextSize = 11
+SpeedLabel.Text = "Velocidade Fly:"
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.ZIndex = 2
+
+local SpeedTextbox = Instance.new("TextBox", ContainerExtras)
+SpeedTextbox.Size = UDim2.new(0, 127, 0, 32)
+SpeedTextbox.Position = UDim2.new(0, 85, 0, 54)
+SpeedTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
+SpeedTextbox.BackgroundTransparency = 0.3
+SpeedTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedTextbox.Font = Enum.Font.GothamSemibold
+SpeedTextbox.TextSize = 12
+SpeedTextbox.Text = "50"
+SpeedTextbox.ZIndex = 2
+Instance.new("UICorner", SpeedTextbox).CornerRadius = UDim.new(0, 6)
+
+-- Atualizar textos de botões com novas chaves
+local function RefreshButtonTexts()
+    AimbotButton.Text = aimbotEnabled and "Desativar Aimbot ("..Binds.Aimbot.Name..")" or "Ativar Aimbot ("..Binds.Aimbot.Name..")"
+    LegitButton.Text = legitAimbotEnabled and "A segurar ("..Binds.LegitAimbot.Name..")..." or "Legit Aimbot ("..Binds.LegitAimbot.Name..")"
+    ESPButton.Text = espEnabled and "Desativar ESP ("..Binds.ESP.Name..")" or "Ativar ESP ("..Binds.ESP.Name..")"
+    WallCheckButton.Text = wallCheckEnabled and "WallCheck: ON ("..Binds.WallCheck.Name..")" or "WallCheck: OFF ("..Binds.WallCheck.Name..")"
+    FlyButton.Text = flyEnabled and "Desativar Fly ("..Binds.Fly.Name..")" or "Ativar Fly ("..Binds.Fly.Name..")"
+    NoclipButton.Text = noclipEnabled and "Noclip: ON ("..Binds.Noclip.Name..")" or "Noclip: OFF ("..Binds.Noclip.Name..")"
+    TabGeralBtn.Text = "GERAL ["..Binds.TabGeral.Name.."]"
+    TabExtrasBtn.Text = "EXTRAS ["..Binds.TabExtras.Name.."]"
+    TabBindsBtn.Text = "BINDS ["..Binds.TabBinds.Name.."]"
+end
+
+-- Gerador de Botões de Bind na Aba Binds
+local bindButtons = {}
+local function CreateBindOption(bindName)
+    local btn = CreateButton(ContainerBinds, bindName .. ": [" .. Binds[bindName].Name .. "]", UDim2.new(0, 0, 0, 0))
+    bindButtons[bindName] = btn
+    
+    btn.MouseButton1Click:Connect(function()
+        listeningForBind = bindName
+        btn.Text = bindName .. ": [PRESSIONE...]"
+        btn.TextColor3 = Color3.fromRGB(0, 170, 255)
+    end)
+end
+
+for actionName, _ in pairs(Binds) do
+    CreateBindOption(actionName)
+end
+
+-- Movimentação por Arraste
 local dragging, dragInput, dragStart, startPos
 
 TitleBar.InputBegan:Connect(function(input)
@@ -161,91 +400,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-RunService.RenderStepped:Connect(function()
-    if dragging and dragInput then
-        local delta = dragInput.Position - dragStart
-        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
-local function CreateButton(parent, text, position)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0, 168, 0, 40)
-    btn.Position = position
-    btn.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-    btn.BackgroundTransparency = 0.3
-    btn.TextColor3 = Color3.fromRGB(220, 220, 230)
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextSize = 13
-    btn.Text = text
-    btn.AutoButtonColor = false
-    btn.ZIndex = 2
-    
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(0, 8)
-    
-    local stroke = Instance.new("UIStroke", btn)
-    stroke.Color = Color3.fromRGB(45, 45, 60)
-    stroke.Thickness = 1
-    
-    return btn
-end
-
-local AimbotButton = CreateButton(Frame, "Ativar Aimbot (E)", UDim2.new(0, 15, 0, 60))
-local LegitButton = CreateButton(Frame, "Legit Aimbot (Segurar Q)", UDim2.new(0, 197, 0, 60))
-local ESPButton = CreateButton(Frame, "Ativar ESP (R)", UDim2.new(0, 15, 0, 115))
-local WallCheckButton = CreateButton(Frame, "WallCheck: OFF (T)", UDim2.new(0, 197, 0, 115))
-local FlyButton = CreateButton(Frame, "Ativar Fly (F)", UDim2.new(0, 15, 0, 170))
-local NoclipButton = CreateButton(Frame, "Noclip: OFF (X)", UDim2.new(0, 197, 0, 170))
-
-local SpeedLabel = Instance.new("TextLabel", Frame)
-SpeedLabel.Size = UDim2.new(0, 85, 0, 40)
-SpeedLabel.Position = UDim2.new(0, 15, 0, 230)
-SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
-SpeedLabel.Font = Enum.Font.GothamSemibold
-SpeedLabel.TextSize = 13
-SpeedLabel.Text = "Velocidade:"
-SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-SpeedLabel.ZIndex = 2
-
-local SpeedTextbox = Instance.new("TextBox", Frame)
-SpeedTextbox.Size = UDim2.new(0, 75, 0, 35)
-SpeedTextbox.Position = UDim2.new(0, 108, 0, 233)
-SpeedTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
-SpeedTextbox.BackgroundTransparency = 0.3
-SpeedTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedTextbox.Font = Enum.Font.GothamSemibold
-SpeedTextbox.TextSize = 14
-SpeedTextbox.Text = "50"
-SpeedTextbox.ZIndex = 2
-local SpeedCorner = Instance.new("UICorner", SpeedTextbox)
-SpeedCorner.CornerRadius = UDim.new(0, 6)
-
-local FOVLabel = Instance.new("TextLabel", Frame)
-FOVLabel.Size = UDim2.new(0, 85, 0, 35)
-FOVLabel.Position = UDim2.new(0, 197, 0, 230)
-FOVLabel.BackgroundTransparency = 1
-FOVLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
-FOVLabel.Font = Enum.Font.GothamSemibold
-FOVLabel.TextSize = 13
-FOVLabel.Text = "Raio FOV:"
-FOVLabel.TextXAlignment = Enum.TextXAlignment.Left
-FOVLabel.ZIndex = 2
-
-local FOVTextbox = Instance.new("TextBox", Frame)
-FOVTextbox.Size = UDim2.new(0, 75, 0, 35)
-FOVTextbox.Position = UDim2.new(0, 290, 0, 233)
-FOVTextbox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
-FOVTextbox.BackgroundTransparency = 0.3
-FOVTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
-FOVTextbox.Font = Enum.Font.GothamSemibold
-FOVTextbox.TextSize = 14
-FOVTextbox.Text = "100"
-FOVTextbox.ZIndex = 2
-local FOVCorner = Instance.new("UICorner", FOVTextbox)
-FOVCorner.CornerRadius = UDim.new(0, 6)
-
+-- Lógica e Funcionalidades dos Cheats
 pcall(function()
     local function IsTeammate(targetPlayer)
         if player.Team and targetPlayer.Team then
@@ -317,7 +472,6 @@ pcall(function()
     local function ApplyBasicESP(targetPlayer, char)
         if not char then return end
         ClearESP(char)
-
         if not espEnabled then return end
 
         local humanoid = char:WaitForChild("Humanoid", 3)
@@ -380,23 +534,18 @@ pcall(function()
     end
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= player then
-            SetupPlayer(p)
-        end
+        if p ~= player then SetupPlayer(p) end
     end
-
-    Players.PlayerAdded:Connect(function(p)
-        SetupPlayer(p)
-    end)
+    Players.PlayerAdded:Connect(function(p) SetupPlayer(p) end)
 
     local function ToggleWallCheck()
         wallCheckEnabled = not wallCheckEnabled
-        WallCheckButton.Text = wallCheckEnabled and "WallCheck: ON (T)" or "WallCheck: OFF (T)"
+        RefreshButtonTexts()
     end
 
     local function ToggleFly()
         flyEnabled = not flyEnabled
-        FlyButton.Text = flyEnabled and "Desativar Fly (F)" or "Ativar Fly (F)"
+        RefreshButtonTexts()
         
         local character = player.Character
         if not character or not character:FindFirstChild("HumanoidRootPart") then return end
@@ -424,7 +573,7 @@ pcall(function()
 
     local function ToggleNoclip()
         noclipEnabled = not noclipEnabled
-        NoclipButton.Text = noclipEnabled and "Noclip: ON (X)" or "Noclip: OFF (X)"
+        RefreshButtonTexts()
     end
 
     local function UnloadScript()
@@ -433,34 +582,52 @@ pcall(function()
         espEnabled = false
         flyEnabled = false
         noclipEnabled = false
-        
         if bv then bv:Destroy() end
         if bg then bg:Destroy() end
-        
         if player.Character then
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid.PlatformStand = false end
             for _, part in pairs(player.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
+                if part:IsA("BasePart") then part.CanCollide = true end
             end
         end
-        
         for _, p in pairs(Players:GetPlayers()) do
-            if p.Character then
-                ClearESP(p.Character)
-            end
+            if p.Character then ClearESP(p.Character) end
         end
-        
-        if renderConnection then
-            renderConnection:Disconnect()
-        end
-        
+        if renderConnection then renderConnection:Disconnect() end
         ScreenGui:Destroy()
     end
 
+    -- RenderStepped: Movimento fluido pelas 4 SETAS + Lógica de Cheats
     renderConnection = RunService.RenderStepped:Connect(function(dt)
+        if not listeningForBind and not UserInputService:GetFocusedTextBox() then
+            local moveSpeed = 6
+            local posX = Frame.Position.X.Offset
+            local posY = Frame.Position.Y.Offset
+            local scaleX = Frame.Position.X.Scale
+            local scaleY = Frame.Position.Y.Scale
+
+            if UserInputService:IsKeyDown(Enum.KeyCode.Left) then
+                posX = posX - moveSpeed
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Right) then
+                posX = posX + moveSpeed
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Up) then
+                posY = posY - moveSpeed
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Down) then
+                posY = posY + moveSpeed
+            end
+
+            Frame.Position = UDim2.new(scaleX, posX, scaleY, posY)
+        end
+
+        if dragging and dragInput then
+            local delta = dragInput.Position - dragStart
+            Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+
         if aimbotEnabled then
             local target = GetClosestPlayerToCenter()
             if target and target.Character and target.Character:FindFirstChild("Head") then
@@ -498,17 +665,16 @@ pcall(function()
 
         if noclipEnabled and player.Character then
             for _, part in pairs(player.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
+                if part:IsA("BasePart") then part.CanCollide = false end
             end
         end
     end)
 
     local function UpdateButtonStyle(btn, state)
+        btn:SetAttribute("ActiveState", state)
         TweenService:Create(btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(28, 28, 38),
-            TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(220, 220, 230)
+            BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(26, 26, 36),
+            TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(210, 210, 220)
         }):Play()
     end
 
@@ -516,75 +682,81 @@ pcall(function()
         aimbotEnabled = not aimbotEnabled
         if aimbotEnabled then 
             legitAimbotEnabled = false 
-            LegitButton.Text = "Legit Aimbot (Segurar Q)"
             UpdateButtonStyle(LegitButton, false)
         end
-        AimbotButton.Text = aimbotEnabled and "Desativar Aimbot (E)" or "Ativar Aimbot (E)"
+        RefreshButtonTexts()
         UpdateButtonStyle(AimbotButton, aimbotEnabled)
     end)
 
+    ESPButton.MouseButton1Click:Connect(function()
+        espEnabled = not espEnabled
+        RefreshButtonTexts()
+        UpdateButtonStyle(ESPButton, espEnabled)
+        UpdateAllESP()
+    end)
+
+    WallCheckButton.MouseButton1Click:Connect(function() ToggleWallCheck() end)
+    FlyButton.MouseButton1Click:Connect(function() ToggleFly() end)
+    NoclipButton.MouseButton1Click:Connect(function() ToggleNoclip() end)
+
+    -- Leitura do Teclado (Atalhos + Configuração de Bind)
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
+        
         if input.UserInputType == Enum.UserInputType.Keyboard then
-            if input.KeyCode == Enum.KeyCode.E then
+            -- Se estiver a aguardar para alterar uma Bind
+            if listeningForBind then
+                Binds[listeningForBind] = input.KeyCode
+                bindButtons[listeningForBind].Text = listeningForBind .. ": [" .. input.KeyCode.Name .. "]"
+                bindButtons[listeningForBind].TextColor3 = Color3.fromRGB(210, 210, 220)
+                listeningForBind = nil
+                RefreshButtonTexts()
+                return
+            end
+
+            -- Acionamento de Cheats pelas Binds Dinâmicas
+            if input.KeyCode == Binds.Aimbot then
                 aimbotEnabled = not aimbotEnabled
                 if aimbotEnabled then 
                     legitAimbotEnabled = false 
-                    LegitButton.Text = "Legit Aimbot (Segurar Q)"
                     UpdateButtonStyle(LegitButton, false)
                 end
-                AimbotButton.Text = aimbotEnabled and "Desativar Aimbot (E)" or "Ativar Aimbot (E)"
+                RefreshButtonTexts()
                 UpdateButtonStyle(AimbotButton, aimbotEnabled)
-            elseif input.KeyCode == Enum.KeyCode.Q then
+            elseif input.KeyCode == Binds.LegitAimbot then
                 legitAimbotEnabled = true
                 aimbotEnabled = false 
-                AimbotButton.Text = "Ativar Aimbot (E)"
                 UpdateButtonStyle(AimbotButton, false)
-                LegitButton.Text = "A a segurar (Q)..."
+                RefreshButtonTexts()
                 UpdateButtonStyle(LegitButton, true)
-            elseif input.KeyCode == Enum.KeyCode.R then
+            elseif input.KeyCode == Binds.ESP then
                 espEnabled = not espEnabled
-                ESPButton.Text = espEnabled and "Desativar ESP (R)" or "Ativar ESP (R)"
+                RefreshButtonTexts()
                 UpdateButtonStyle(ESPButton, espEnabled)
                 UpdateAllESP()
-            elseif input.KeyCode == Enum.KeyCode.T then
+            elseif input.KeyCode == Binds.WallCheck then
                 ToggleWallCheck()
-            elseif input.KeyCode == Enum.KeyCode.F then
+            elseif input.KeyCode == Binds.Fly then
                 ToggleFly()
-            elseif input.KeyCode == Enum.KeyCode.X then
+            elseif input.KeyCode == Binds.Noclip then
                 ToggleNoclip()
+            elseif input.KeyCode == Binds.TabGeral then
+                SwitchTab("Geral")
+            elseif input.KeyCode == Binds.TabExtras then
+                SwitchTab("Extras")
+            elseif input.KeyCode == Binds.TabBinds then
+                SwitchTab("Binds")
             end
         end
     end)
 
     UserInputService.InputEnded:Connect(function(input)
-        if input.KeyCode == Enum.KeyCode.Q then
+        if input.KeyCode == Binds.LegitAimbot then
             legitAimbotEnabled = false
-            LegitButton.Text = "Legit Aimbot (Segurar Q)"
+            RefreshButtonTexts()
             UpdateButtonStyle(LegitButton, false)
         end
     end)
 
-    ESPButton.MouseButton1Click:Connect(function()
-        espEnabled = not espEnabled
-        ESPButton.Text = espEnabled and "Desativar ESP (R)" or "Ativar ESP (R)"
-        UpdateButtonStyle(ESPButton, espEnabled)
-        UpdateAllESP()
-    end)
-
-    WallCheckButton.MouseButton1Click:Connect(function()
-        ToggleWallCheck()
-    end)
-
-    FlyButton.MouseButton1Click:Connect(function()
-        ToggleFly()
-    end)
-
-    NoclipButton.MouseButton1Click:Connect(function()
-        ToggleNoclip()
-    end)
-
-    CloseButton.MouseButton1Click:Connect(function()
-        UnloadScript()
-    end)
+    CloseButton.MouseButton1Click:Connect(function() UnloadScript() end)
 end)
