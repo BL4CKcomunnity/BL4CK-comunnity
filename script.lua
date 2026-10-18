@@ -1,5 +1,5 @@
 -- ========================================================
--- BL4CK HUB - WHITELIST & SCRIPT PRINCIPAL COMPLETO
+-- BL4CK HUB - WHITELIST & UI HORIZONTAL ANIMADA COM NEON AZUL
 -- ========================================================
 
 local HttpService = game:GetService("HttpService")
@@ -20,7 +20,8 @@ local function CheckAccess()
         end)
         
         if successDecode and data then
-            local listaUsers = data.whitelisted_users or data["usuários_da_lista_de_permissões"] or data.usuarios_da_lista_de_permisoes or data.users
+            -- Verifica a chave correta do ficheiro JSON no GitHub
+            local listaUsers = data.whitelisted_users or data.usuarios or data.users
             if listaUsers then
                 for _, name in pairs(listaUsers) do
                     if name:lower() == player.Name:lower() then
