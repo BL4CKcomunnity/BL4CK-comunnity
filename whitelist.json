@@ -1,8 +1,8 @@
 {
-  "usuários_da_lista_de_permisões": [
+  "whitelisted_users": [
     "gwbb11111",
     "haha01573",
     "ogonkegey12345"
   ],
-  "chaves": []
+  "keys": []
 }
