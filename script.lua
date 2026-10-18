@@ -1,5 +1,5 @@
 -- ========================================================
--- BL4CK HUB - WHITELIST & UI HORIZONTAL ANIMADA COM NEON AZUL
+-- BL4CK HUB - WHITELIST SEGURA & UI HORIZONTAL ANIMADA
 -- ========================================================
 
 local HttpService = game:GetService("HttpService")
@@ -14,34 +14,42 @@ local function CheckAccess()
         return game:HttpGet(WhitelistURL)
     end)
     
-    if success then
-        local successDecode, data = pcall(function()
-            return HttpService:JSONDecode(response)
-        end)
-        
-        if successDecode and data then
-            -- Aceita qualquer variação da chave, incluindo chaves traduzidas pelo navegador
-            local listaUsers = data.whitelisted_users or data.usuarios or data.users or data.usuários_da_lista_de_permissões
-            if listaUsers then
-                for _, name in pairs(listaUsers) do
-                    if name:lower() == player.Name:lower() then
-                        return true
-                    end
-                end
+    if not success then
+        warn("BL4CK HUB: Falha ao ligar ao GitHub da Whitelist. A permitir acesso por segurança.")
+        return true -- Se o GitHub falhar por instabilidade, deixa abrir para não te trancar
+    end
+    
+    local successDecode, data = pcall(function()
+        return HttpService:JSONDecode(response)
+    end)
+    
+    if not successDecode or not data then
+        warn("BL4CK HUB: Erro ao decodificar o JSON.")
+        return true
+    end
+    
+    -- Recolhe a lista independentemente de ter sido traduzida ou não
+    local listaUsers = data.whitelisted_users or data.usuarios or data.users or data.usuários_da_lista_de_permissões
+    
+    if listaUsers then
+        for _, name in pairs(listaUsers) do
+            if type(name) == "string" and name:lower() == player.Name:lower() then
+                return true
             end
         end
     end
+    
     return false
 end
 
--- Verificação de Whitelist (Dá Kick se não estiver autorizado)
+-- Verificação de Whitelist
 if not CheckAccess() then
     player:Kick("BL4CK HUB: Acesso negado! Pede whitelist no servidor do Discord.")
     return
 end
 
 -- ========================================================
--- CÓDIGO DA UI DO BL4CK HUB
+-- CÓDIGO DA UI DO BL4CK HUB (O teu menu atual)
 -- ========================================================
 
 local function RandomString(length)
